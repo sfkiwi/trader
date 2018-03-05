@@ -11,6 +11,8 @@ import * as dotenv from 'dotenv';
 import { BigJS, ZERO } from 'gdax-trading-toolkit/build/src/lib/types';
 import { Ticker } from 'gdax-trading-toolkit/build/src/exchanges/PublicExchangeAPI';
 import { padfloat } from 'gdax-trading-toolkit/build/src/utils';
+import * as fs from 'fs';
+import { WriteStream } from 'fs';
 
 dotenv.config();
 
@@ -161,6 +163,8 @@ program
   .command('orders <cmd>')
   .alias('o')
   .description('Fetch orders')
+  .option('-l, --log [filename', 'Log to file')
+  .option('-p, --product <product>', 'Currency Pair')
   .action(parseOrders)
   .on('--help', function () {
     console.log('');
@@ -247,13 +251,16 @@ function parseCancel(order: string, cmd: any) {
   cancel(orderId);
 }
 
-function parseOrders(cmd: string) {
+function parseOrders(cmd: string, options: any) {
+  
+  let product = options.product ? options.product : 'BTC-USD';
+  
   if (cmd === 'ls') {
-    listOrders();
+    listOrders(product);
   }
 
-  if (cmd === 'live') {
-    showLiveOrders();
+  if (cmd === 'live' || options.log) {
+    showLiveOrders(product, (cmd === 'live'), options.log);
   }
 }
 
@@ -459,26 +466,59 @@ function loadTicker(product: string = 'BTC-USD') {
 }
 
 
-function showLiveOrders(product: string = 'BTC-USD') {
+function showLiveOrders(product: string = 'BTC-USD', display: boolean = true, log: string = null) {
 
   let gdaxFeedConfig = gdaxConfig;
   gdaxFeedConfig.apiUrl = process.env.GDAX_WS_FEED || GDAX_WS_FEED
+  let orders: WriteStream = null;
+
+  if (log) {
+    orders = fs.createWriteStream(`./${log}.csv`);
+    orders.write(createLogHeader() + '\n');
+  }
 
   GTT.Factories.GDAX.getSubscribedFeeds(gdaxFeedConfig, [product]).then((feed: GDAXFeed) => {
 
     createTradeExecutedTrigger(feed, product, false)
       .setAction((msg: TradeExecutedMessage) => {
-        console.log(printTradeExecutedMessage(msg));
+        if (display) {
+          console.log(printTradeExecutedMessage(msg));
+        }
+        if (log) {
+          orders.write(logTradeExecutedMessage(msg) + '\n', (err) => {
+            if (err) {
+              logger.log('error', 'Unable to write to log file', err);
+            }
+          });
+        }
       });
 
     createTradeFinalizedTrigger(feed, product, false)
       .setAction((msg: TradeFinalizedMessage) => {
-        console.log(printTradeFinalizedMessage(msg));
+        if (display) {
+          console.log(printTradeFinalizedMessage(msg));
+        }
+        if (log) {
+          orders.write(logTradeFinalizedMessage(msg) + '\n', (err) => {
+            if (err) {
+              logger.log('error', 'Unable to write to log file', err);
+            }
+          });
+        }
       });
 
     createMyOrderPlacedTrigger(feed, product, false)
       .setAction((msg: MyOrderPlacedMessage) => {
-        console.log(printMyOrderPlacedMessage(msg));
+        if (display) {
+          console.log(printMyOrderPlacedMessage(msg));
+        }
+        if (log) {
+          orders.write(logMyOrderPlacedMessage(msg) + '\n', (err) => {
+            if (err) {
+              logger.log('error', 'Unable to write to log file', err);
+            }
+          });
+        }
       });
   })
 
@@ -565,6 +605,58 @@ function printMyOrderPlacedMessage(msg: MyOrderPlacedMessage) {
     `${chalk.dim(msg.orderId)}`
   );
 }
+
+function createLogHeader(delim: string = ',') {
+  return (
+    'Message Type' + delim +
+    'Side' + delim +
+    'Order Type' + delim +
+    'Size' + delim +
+    'Remaining' + delim +
+    'Price' + delim +
+    'Date' + delim + 'Time' + delim +
+    'Order Id'
+  );
+}
+
+function logMyOrderPlacedMessage(msg: MyOrderPlacedMessage, delim: string = ',') {
+  return (
+    'Order Placed' + delim +
+    `${msg.side}` + delim +
+    `${msg.orderType}` + delim +
+    `${msg.size}` + delim +
+    '' + delim +
+    `${truncate(msg.price)}` + delim +
+    `${moment(msg.time).format('MM/D/YY, H:mm:ss')}` + delim +
+    `${msg.orderId}`
+  );
+}
+
+function logTradeExecutedMessage(msg: TradeExecutedMessage, delim: string = ',') {
+  return (
+    'Trade Executed' + delim +
+    `${msg.side}` + delim +
+    `${msg.orderType}` + delim +
+    `${msg.tradeSize}` + delim +
+    `${msg.remainingSize}` + delim +
+    `${truncate(msg.price)}` + delim +
+    `${moment(msg.time).format('MM/D/YY, H:mm:ss')}` + delim +
+    `${msg.orderId}`
+  );
+};
+
+function logTradeFinalizedMessage(msg: TradeFinalizedMessage, delim: string = ',') {
+  return (
+    'Trade Finalized' + delim +
+    `${msg.side}` + delim +
+    `${msg.reason}` + delim +
+    '' + delim +
+    `${msg.remainingSize}` + delim +
+    `${truncate(msg.price)}` + delim +
+    `${moment(msg.time).format('MM/D/YY, H:mm:ss')}` + delim +
+    `${msg.orderId}`
+  );
+};
 
 function printTicker(ticker: Ticker, quotePrec: number = 2) {
   return `${chalk.dim('Price: ')}${chalk.bold.white(truncate(padfloat(ticker.price, 10, quotePrec)))}${chalk.dim(' | Bid: ' + padfloat(ticker.bid, 10, quotePrec))}` +

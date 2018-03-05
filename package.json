@@ -8,6 +8,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/dotenv": "^4.0.2",
+    "@types/node": "^9.4.6",
     "chalk": "^2.3.2",
     "commander": "^2.14.1",
     "dotenv": "^5.0.1",
