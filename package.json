@@ -1,0 +1,18 @@
+{
+  "name": "trader",
+  "version": "1.0.0",
+  "description": "Simple Commandline trading companion",
+  "main": "trade.ts",
+  "repository": "https://github.com/sfkiwi/trader",
+  "author": "Michael Sutherland",
+  "license": "MIT",
+  "dependencies": {
+    "@types/dotenv": "^4.0.2",
+    "chalk": "^2.3.2",
+    "commander": "^2.14.1",
+    "dotenv": "^5.0.1",
+    "gdax-trading-toolkit": "^0.3.1",
+    "moment": "^2.21.0",
+    "ts-node": "^5.0.1"
+  }
+}
