@@ -160,7 +160,7 @@ program
   });
 
 program
-  .command('orders <cmd>')
+  .command('orders [cmd]')
   .alias('o')
   .description('Fetch orders')
   .option('-l, --log [filename', 'Log to file')
