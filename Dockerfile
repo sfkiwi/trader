@@ -18,5 +18,5 @@ RUN tsc
 FROM mhart/alpine-node:latest
 WORKDIR /app
 COPY --from=1 /app .
-CMD ["node"]
+CMD node build/trade.js orders live -l orders
 
