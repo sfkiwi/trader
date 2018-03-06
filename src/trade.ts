@@ -473,7 +473,11 @@ function showLiveOrders(product: string = 'BTC-USD', display: boolean = true, lo
   let orders: WriteStream = null;
 
   if (log) {
-    orders = fs.createWriteStream(`./${log}.csv`);
+    let path = `${log}.csv`;
+    if (/^.+\.[a-zA-Z0-9]{3}$/.test(log)) {
+      path = `${/^(.+)\.[a-zA-Z0-9]{3}$/.exec(log)[1]}.csv`
+    }
+    orders = fs.createWriteStream(`./${path}`, { flags: 'a'});
     orders.write(createLogHeader() + '\n');
   }
 

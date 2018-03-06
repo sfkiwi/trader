@@ -10,3 +10,6 @@ node_modules/
 
 # logging output
 *.csv
+
+# System files
+.DS_Store
