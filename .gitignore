@@ -1,5 +1,6 @@
 # Keys and Sensitive data
 .env
+.pem
 
 # Editor files
 .vscode/
@@ -7,6 +8,7 @@
 # build files and dependencies
 build/
 node_modules/
+orders*
 
 # logging output
 *.csv

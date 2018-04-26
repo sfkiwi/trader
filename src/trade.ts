@@ -405,6 +405,8 @@ function buy(order: Order) {
 function cancel(orderId: string) {
   gdax.cancelOrder(orderId).then((response: string) => {
     console.log(response);
+  }).catch((err) => {
+    console.log(err);
   })
 }
 
